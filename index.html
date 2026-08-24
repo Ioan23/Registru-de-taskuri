@@ -91,7 +91,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult,
+  getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
   onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
@@ -147,9 +147,23 @@ const state = {
 
 let unsubscribeTasks = null;
 
-function login(){
+async function login(){
   state.authError = '';
-  signInWithRedirect(auth, provider);
+  try{
+    await signInWithPopup(auth, provider);
+  }catch(err){
+    if(err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request'){
+      try{
+        await signInWithRedirect(auth, provider);
+      }catch(err2){
+        state.authError = 'Autentificare eșuată: ' + err2.code;
+        render();
+      }
+    } else {
+      state.authError = 'Autentificare eșuată: ' + err.code;
+      render();
+    }
+  }
 }
 function logout(){
   signOut(auth);
