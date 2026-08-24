@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#EEF0EA">
+<title>Registru de taskuri</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EEF0EA; --bg-alt:#E2E6DD; --card:#FFFFFF; --ink:#182620; --ink-soft:#5A6960;
+    --border:#D6DACE; --teal:#0F6E63; --teal-soft:#DCEBE8; --gold:#C98A2E; --gold-soft:#F3E4C8; --coral:#C1502E;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);}
+  body{
+    color:var(--ink); font-family:'IBM Plex Sans',sans-serif; -webkit-tap-highlight-color:transparent;
+    padding:16px; padding-bottom:calc(16px + env(safe-area-inset-bottom));
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .display{font-family:'Space Grotesk',sans-serif;}
+  .wrap{max-width:720px;margin:0 auto;}
+  .header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:20px;}
+  h1{font-size:26px;font-weight:700;letter-spacing:-0.02em;margin:0;}
+  .status{color:var(--ink-soft);font-size:11px;margin:4px 0 0;}
+  .pillbar{display:flex;gap:4px;padding:4px;border-radius:999px;background:var(--bg-alt);}
+  .pillbar button{border:none;background:transparent;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:600;font-family:inherit;color:var(--ink-soft);cursor:pointer;}
+  .pillbar button.active{background:var(--ink);color:var(--bg);}
+  .grid{display:grid;grid-template-columns:1fr;gap:16px;}
+  @media(min-width:820px){ .grid{grid-template-columns:2fr 1fr;} }
+  .card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px;}
+  .day-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  .day-nav button.arrow{border:none;background:var(--bg-alt);width:36px;height:36px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--ink);}
+  .day-label{font-weight:600;font-size:17px;text-transform:capitalize;}
+  .today-link{border:none;background:none;color:var(--teal);font-size:11px;font-family:'IBM Plex Mono',monospace;text-decoration:underline;cursor:pointer;padding:2px;margin-top:2px;}
+  .add-row{display:flex;gap:8px;margin-bottom:18px;}
+  .add-row input{flex:1;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--bg);font-size:14px;font-family:inherit;outline:none;color:var(--ink);}
+  .add-row input:focus{border-color:var(--teal);}
+  .add-row button{border:none;background:var(--teal);color:#fff;width:46px;border-radius:12px;font-size:20px;cursor:pointer;}
+  .empty{text-align:center;padding:48px 0;color:var(--ink-soft);}
+  .empty .icon{font-size:26px;opacity:.5;margin-bottom:8px;}
+  .task-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;}
+  .task-item{display:flex;align-items:center;gap:10px;padding:12px;border-radius:12px;background:var(--bg);border:1px solid var(--border);}
+  .task-item.done{background:var(--teal-soft);border-color:transparent;}
+  .check{width:24px;height:24px;border-radius:7px;border:2px solid var(--border);background:#fff;flex:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;}
+  .task-item.done .check{background:var(--teal);border-color:var(--teal);}
+  .task-text{flex:1;font-size:14px;word-break:break-word;}
+  .task-item.done .task-text{text-decoration:line-through;color:var(--ink-soft);}
+  .del{border:none;background:none;color:var(--coral);cursor:pointer;font-size:15px;padding:4px;opacity:.7;}
+  .move-btn{margin-top:18px;width:100%;border:none;padding:13px;border-radius:12px;font-weight:600;font-size:14px;background:var(--gold-soft);color:#8A5A15;cursor:pointer;}
+  .stamp-card{display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .stamp-wrap{transform:rotate(-3deg);}
+  .stamp-caption{margin-top:16px;text-align:center;}
+  .stamp-caption .n{font-weight:600;font-size:14px;}
+  .stamp-caption .s{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .evo-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;}
+  .evo-title{display:flex;align-items:center;gap:8px;font-weight:600;font-size:17px;}
+  .chart{display:flex;align-items:flex-end;gap:6px;height:220px;padding-top:10px;border-bottom:1px solid var(--border);}
+  .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;}
+  .bar{width:100%;max-width:34px;border-radius:5px 5px 0 0;background:var(--gold);transition:height .4s ease;min-height:2px;}
+  .bar.full{background:var(--teal);}
+  .bar.empty{background:var(--bg-alt);}
+  .bar-label{font-size:9px;color:var(--ink-soft);margin-top:6px;font-family:'IBM Plex Mono',monospace;white-space:nowrap;}
+  .stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px;}
+  .stat{background:var(--bg);border-radius:12px;padding:14px;text-align:center;}
+  .stat .v{font-size:22px;font-weight:600;font-family:'IBM Plex Mono',monospace;}
+  .stat .l{font-size:11px;color:var(--ink-soft);margin-top:4px;}
+
+  .loading-screen{min-height:60vh;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;font-size:13px;}
+  .login-wrap{min-height:80vh;display:flex;align-items:center;justify-content:center;}
+  .login-card{max-width:360px;width:100%;text-align:center;padding:40px 28px;}
+  .login-card h1{font-size:22px;margin-bottom:8px;}
+  .login-card p{color:var(--ink-soft);font-size:13px;margin-bottom:26px;line-height:1.5;}
+  .google-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:13px;border-radius:12px;border:1px solid var(--border);background:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;color:var(--ink);}
+  .google-btn:hover{background:var(--bg);}
+  .auth-error{margin-top:14px;font-size:12px;color:var(--coral);}
+  .right-cluster{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .user-badge{display:flex;align-items:center;gap:8px;}
+  .avatar{width:32px;height:32px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;font-family:'Space Grotesk',sans-serif;flex:none;overflow:hidden;}
+  .avatar img{width:100%;height:100%;object-fit:cover;}
+  .logout-btn{border:none;background:var(--bg-alt);padding:8px 14px;border-radius:10px;font-size:12px;font-weight:600;color:var(--ink);cursor:pointer;font-family:inherit;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult,
+  onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+  onSnapshot, writeBatch
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA9GrEV876n_zIM3F2oGtDw92OpWgVQG8Q",
+  authDomain: "registru-de-taskuri.firebaseapp.com",
+  projectId: "registru-de-taskuri",
+  storageBucket: "registru-de-taskuri.firebasestorage.app",
+  messagingSenderId: "772083029702",
+  appId: "1:772083029702:web:640b652c89579a54fce9c7",
+  measurementId: "G-M1C1XP3WY4"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+const db = getFirestore(fbApp);
+const provider = new GoogleAuthProvider();
+
+const RO_DAYS = ['duminică','luni','marți','miercuri','joi','vineri','sâmbătă'];
+const RO_MONTHS = ['ianuarie','februarie','martie','aprilie','mai','iunie','iulie','august','septembrie','octombrie','noiembrie','decembrie'];
+const RO_MONTHS_SHORT = ['Ian','Feb','Mar','Apr','Mai','Iun','Iul','Aug','Sep','Oct','Noi','Dec'];
+
+function fmtDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function parseDate(str){ const [y,m,d]=str.split('-').map(Number); return new Date(y,m-1,d); }
+function addDays(str,delta){ const d=parseDate(str); d.setDate(d.getDate()+delta); return fmtDate(d); }
+function todayStr(){ return fmtDate(new Date()); }
+function isoWeek(date){
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = (d.getUTCDay()+6)%7;
+  d.setUTCDate(d.getUTCDate()-dayNum+3);
+  const firstThursday = new Date(Date.UTC(d.getUTCFullYear(),0,4));
+  const weekNum = 1 + Math.round(((d-firstThursday)/86400000 - 3 + ((firstThursday.getUTCDay()+6)%7))/7);
+  return d.getUTCFullYear()+'-W'+String(weekNum).padStart(2,'0');
+}
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+const state = {
+  user: null,
+  authLoading: true,
+  tasksLoading: true,
+  tasks: [],
+  viewDate: todayStr(),
+  screen: 'zi',
+  evoRange: 'zi',
+  authError: '',
+};
+
+let unsubscribeTasks = null;
+
+function login(){
+  state.authError = '';
+  signInWithRedirect(auth, provider);
+}
+function logout(){
+  signOut(auth);
+}
+
+getRedirectResult(auth).catch(err=>{
+  state.authError = 'Autentificare eșuată: ' + err.code;
+  render();
+});
+
+onAuthStateChanged(auth, user=>{
+  state.user = user;
+  state.authLoading = false;
+  if(unsubscribeTasks){ unsubscribeTasks(); unsubscribeTasks = null; }
+  if(user){
+    state.tasksLoading = true;
+    const colRef = collection(db, 'users', user.uid, 'tasks');
+    unsubscribeTasks = onSnapshot(colRef, snap=>{
+      state.tasks = snap.docs.map(d=>({ id: d.id, ...d.data() }));
+      state.tasksLoading = false;
+      render();
+    }, err=>{
+      console.error(err);
+      state.tasksLoading = false;
+      render();
+    });
+  } else {
+    state.tasks = [];
+  }
+  render();
+});
+
+async function addTask(text){
+  text = (text||'').trim();
+  if(!text || !state.user) return;
+  try{
+    await addDoc(collection(db,'users',state.user.uid,'tasks'), { text, date: state.viewDate, completed:false, createdAt: Date.now() });
+  }catch(e){ console.error(e); }
+}
+async function toggleTask(id){
+  const t = state.tasks.find(t=>t.id===id);
+  if(!t || !state.user) return;
+  try{ await updateDoc(doc(db,'users',state.user.uid,'tasks',id), { completed: !t.completed }); }
+  catch(e){ console.error(e); }
+}
+async function deleteTask(id){
+  if(!state.user) return;
+  try{ await deleteDoc(doc(db,'users',state.user.uid,'tasks',id)); }
+  catch(e){ console.error(e); }
+}
+async function moveUnfinished(){
+  if(!state.user) return;
+  const next = addDays(state.viewDate,1);
+  const targets = state.tasks.filter(t=>t.date===state.viewDate && !t.completed);
+  if(targets.length===0) return;
+  const batch = writeBatch(db);
+  targets.forEach(t=> batch.update(doc(db,'users',state.user.uid,'tasks',t.id), { date: next }) );
+  try{ await batch.commit(); } catch(e){ console.error(e); }
+}
+
+function dailyStatsMap(){
+  const map = {};
+  state.tasks.forEach(t=>{
+    if(!map[t.date]) map[t.date] = {total:0, done:0};
+    map[t.date].total++;
+    if(t.completed) map[t.date].done++;
+  });
+  return map;
+}
+function buildDailySeries(map){
+  const arr=[];
+  for(let i=13;i>=0;i--){
+    const ds = addDays(todayStr(), -i);
+    const s = map[ds] || {total:0,done:0};
+    const p = parseDate(ds);
+    arr.push({ label: String(p.getDate()).padStart(2,'0')+'.'+String(p.getMonth()+1).padStart(2,'0'), percent: s.total? Math.round(s.done/s.total*100):0, total:s.total, done:s.done });
+  }
+  return arr;
+}
+function buildWeeklySeries(map){
+  const agg={};
+  Object.entries(map).forEach(([ds,s])=>{
+    const wk = isoWeek(parseDate(ds));
+    if(!agg[wk]) agg[wk]={total:0,done:0};
+    agg[wk].total+=s.total; agg[wk].done+=s.done;
+  });
+  return Object.keys(agg).sort().slice(-10).map(k=>{
+    const s=agg[k]; const wNum=k.split('-W')[1];
+    return { label:'S'+wNum, percent:s.total?Math.round(s.done/s.total*100):0, total:s.total, done:s.done };
+  });
+}
+function buildMonthlySeries(map){
+  const agg={};
+  Object.entries(map).forEach(([ds,s])=>{
+    const p=parseDate(ds);
+    const mk = p.getFullYear()+'-'+String(p.getMonth()+1).padStart(2,'0');
+    if(!agg[mk]) agg[mk]={total:0,done:0,m:p.getMonth()};
+    agg[mk].total+=s.total; agg[mk].done+=s.done;
+  });
+  return Object.keys(agg).sort().slice(-12).map(k=>{
+    const s=agg[k];
+    return { label:RO_MONTHS_SHORT[s.m], percent:s.total?Math.round(s.done/s.total*100):0, total:s.total, done:s.done };
+  });
+}
+
+function googleIcon(){
+  return '<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6 29.6 4 24 4c-7.4 0-13.8 4.2-17 10.3-.3.5-.5 1-0.7 1.4z"/><path fill="#4CAF50" d="M24 44c5.5 0 10.4-1.9 14.3-5.1l-6.6-5.6C29.6 35 26.9 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.6 5.1C9.9 39.6 16.4 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.7l6.6 5.6C41.6 36.5 44 30.9 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>';
+}
+
+function loadingScreen(msg){
+  return '<div class="wrap"><div class="loading-screen mono">'+msg+'</div></div>';
+}
+function loginScreen(){
+  let html = '<div class="wrap login-wrap"><div class="card login-card">';
+  html += '<h1 class="display">Registru de taskuri</h1>';
+  html += '<p>Conectează-te ca să-ți sincronizezi taskurile în timp real, pe orice device.</p>';
+  html += '<button class="google-btn" data-action="login">'+googleIcon()+' Continuă cu Google</button>';
+  if(state.authError) html += '<div class="auth-error">'+escapeHtml(state.authError)+'</div>';
+  html += '</div></div>';
+  return html;
+}
+
+function userBadge(){
+  const u = state.user;
+  const initial = (u.displayName||u.email||'?').trim().charAt(0).toUpperCase();
+  const avatar = u.photoURL ? '<img src="'+u.photoURL+'" alt="">' : initial;
+  return '<div class="user-badge"><div class="avatar">'+avatar+'</div><button class="logout-btn" data-action="logout">Ieși din cont</button></div>';
+}
+
+function render(){
+  const app = document.getElementById('app');
+
+  if(state.authLoading){ app.innerHTML = loadingScreen('Se verifică autentificarea…'); return; }
+  if(!state.user){ app.innerHTML = loginScreen(); return; }
+  if(state.tasksLoading){ app.innerHTML = loadingScreen('Se încarcă taskurile…'); return; }
+
+  const dayTasks = state.tasks.filter(t=>t.date===state.viewDate);
+  const total = dayTasks.length;
+  const doneCount = dayTasks.filter(t=>t.completed).length;
+  const percent = total ? Math.round(doneCount/total*100) : 0;
+  const unfinishedCount = total - doneCount;
+  const isToday = state.viewDate === todayStr();
+  const dObj = parseDate(state.viewDate);
+  const dayLabel = RO_DAYS[dObj.getDay()] + ', ' + dObj.getDate() + ' ' + RO_MONTHS[dObj.getMonth()];
+
+  let html = '<div class="wrap">';
+
+  html += '<div class="header"><div><h1 class="display">Registru de taskuri</h1><p class="status mono">sincronizat</p></div>';
+  html += '<div class="right-cluster"><div class="pillbar">';
+  html += '<button data-action="set-screen" data-val="zi" class="'+(state.screen==='zi'?'active':'')+'">Ziua</button>';
+  html += '<button data-action="set-screen" data-val="evolutie" class="'+(state.screen==='evolutie'?'active':'')+'">Evoluție</button>';
+  html += '</div>'+userBadge()+'</div></div>';
+
+  if(state.screen==='zi'){
+    html += '<div class="grid">';
+
+    html += '<div class="card">';
+    html += '<div class="day-nav"><button class="arrow" data-action="prev-day">‹</button>';
+    html += '<div style="text-align:center"><div class="day-label display">'+dayLabel+'</div>';
+    if(!isToday) html += '<button class="today-link" data-action="today">înapoi la azi</button>';
+    html += '</div><button class="arrow" data-action="next-day">›</button></div>';
+
+    html += '<div class="add-row"><input id="new-task-input" type="text" placeholder="Adaugă un task nou…" autocomplete="off">';
+    html += '<button data-action="add">+</button></div>';
+
+    if(dayTasks.length===0){
+      html += '<div class="empty"><div class="icon">🗓️</div><p>Nicio sarcină pentru '+(isToday?'azi':'ziua asta')+'. Adaugă prima mai sus.</p></div>';
+    } else {
+      const sorted = dayTasks.slice().sort((a,b)=> (a.completed-b.completed) || ((a.createdAt||0)-(b.createdAt||0)) );
+      html += '<ul class="task-list">';
+      sorted.forEach(t=>{
+        html += '<li class="task-item '+(t.completed?'done':'')+'">';
+        html += '<button class="check" data-action="toggle" data-id="'+t.id+'">'+(t.completed?'✓':'')+'</button>';
+        html += '<span class="task-text">'+escapeHtml(t.text)+'</span>';
+        html += '<button class="del" data-action="delete" data-id="'+t.id+'">🗑</button>';
+        html += '</li>';
+      });
+      html += '</ul>';
+    }
+
+    if(unfinishedCount>0){
+      const nextDayName = RO_DAYS[parseDate(addDays(state.viewDate,1)).getDay()];
+      html += '<button class="move-btn" data-action="move">→ Mută '+unfinishedCount+' '+(unfinishedCount===1?'task nerezolvat':'taskuri nerezolvate')+' pe '+nextDayName+'</button>';
+    }
+    html += '</div>';
+
+    const r = 54, circ = 2*Math.PI*r, offset = circ - (percent/100)*circ;
+    const stampColor = percent===100 ? 'var(--teal)' : 'var(--gold)';
+    html += '<div class="card stamp-card"><div class="stamp-wrap">';
+    html += '<svg width="150" height="150" viewBox="0 0 160 160">';
+    html += '<circle cx="80" cy="80" r="70" fill="none" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="2 5"/>';
+    html += '<circle cx="80" cy="80" r="'+r+'" fill="none" stroke="var(--bg-alt)" stroke-width="10"/>';
+    html += '<circle cx="80" cy="80" r="'+r+'" fill="none" stroke="'+stampColor+'" stroke-width="10" stroke-dasharray="'+circ+'" stroke-dashoffset="'+offset+'" stroke-linecap="round" transform="rotate(-90 80 80)" style="transition:stroke-dashoffset .5s ease"/>';
+    html += '<text x="80" y="76" text-anchor="middle" class="mono" style="font-weight:600;font-size:28px;fill:var(--ink)">'+percent+'%</text>';
+    html += '<text x="80" y="96" text-anchor="middle" class="mono" style="font-size:9px;letter-spacing:.1em;fill:var(--ink-soft)">REZOLVATE</text>';
+    html += '</svg></div>';
+    html += '<div class="stamp-caption"><div class="n display">'+doneCount+' din '+total+' taskuri</div>';
+    html += '<div class="s">'+(total===0?'Fără sarcini azi':percent===100?'Ziua e completă 🎉':unfinishedCount+' rămase')+'</div></div>';
+    html += '</div>';
+
+    html += '</div>';
+  } else {
+    const map = dailyStatsMap();
+    const series = state.evoRange==='zi' ? buildDailySeries(map) : state.evoRange==='saptamana' ? buildWeeklySeries(map) : buildMonthlySeries(map);
+    const withData = series.filter(d=>d.total>0);
+    const avg = withData.length ? Math.round(withData.reduce((a,b)=>a+b.percent,0)/withData.length) : 0;
+    const sumDone = series.reduce((a,b)=>a+b.done,0);
+    const sumTotal = series.reduce((a,b)=>a+b.total,0);
+
+    html += '<div class="card">';
+    html += '<div class="evo-head"><div class="evo-title">📈 Evoluția rezolvării</div>';
+    html += '<div class="pillbar">';
+    [['zi','Zi'],['saptamana','Săptămână'],['luna','Lună']].forEach(([val,lbl])=>{
+      html += '<button data-action="set-evo" data-val="'+val+'" class="'+(state.evoRange===val?'active':'')+'">'+lbl+'</button>';
+    });
+    html += '</div></div>';
+
+    html += '<div class="chart">';
+    series.forEach(d=>{
+      const cls = d.total===0 ? 'empty' : d.percent===100 ? 'full' : '';
+      const h = d.total===0 ? 2 : Math.max(d.percent,2);
+      html += '<div class="bar-col"><div class="bar '+cls+'" style="height:'+h+'%" title="'+d.percent+'% ('+d.done+'/'+d.total+')"></div><div class="bar-label">'+d.label+'</div></div>';
+    });
+    html += '</div>';
+
+    html += '<div class="stats3">';
+    html += '<div class="stat"><div class="v">'+avg+'%</div><div class="l">medie perioadă</div></div>';
+    html += '<div class="stat"><div class="v">'+sumDone+'</div><div class="l">taskuri rezolvate</div></div>';
+    html += '<div class="stat"><div class="v">'+sumTotal+'</div><div class="l">taskuri totale</div></div>';
+    html += '</div>';
+    html += '</div>';
+  }
+
+  html += '</div>';
+  app.innerHTML = html;
+
+  const input = document.getElementById('new-task-input');
+  if(input){
+    input.addEventListener('keydown', e=>{ if(e.key==='Enter') addTask(input.value); });
+  }
+}
+
+document.getElementById('app').addEventListener('click', e=>{
+  const el = e.target.closest('[data-action]');
+  if(!el) return;
+  const action = el.dataset.action;
+  const id = el.dataset.id;
+  const val = el.dataset.val;
+  if(action==='login') login();
+  else if(action==='logout') logout();
+  else if(action==='toggle') toggleTask(id);
+  else if(action==='delete') deleteTask(id);
+  else if(action==='move') moveUnfinished();
+  else if(action==='prev-day'){ state.viewDate = addDays(state.viewDate,-1); render(); }
+  else if(action==='next-day'){ state.viewDate = addDays(state.viewDate,1); render(); }
+  else if(action==='today'){ state.viewDate = todayStr(); render(); }
+  else if(action==='set-screen'){ state.screen = val; render(); }
+  else if(action==='set-evo'){ state.evoRange = val; render(); }
+  else if(action==='add'){ const inp = document.getElementById('new-task-input'); addTask(inp.value); }
+});
+
+render();
+</script>
+</body>
+</html>
